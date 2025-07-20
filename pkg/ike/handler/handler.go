@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
+	eap_message "github.com/free5gc/ike/eap"
 	ike_message "github.com/free5gc/ike/message"
 	ike_security "github.com/free5gc/ike/security"
 	"github.com/free5gc/ike/security/dh"
@@ -145,7 +146,8 @@ func HandleIKEAUTH(
 	var ikePayload ike_message.IKEPayloadContainer
 
 	// var eapIdentifier uint8
-	var eapReq *ike_message.EAP
+	//var eapReq *ike_message.EAP
+	var eapReq *ike_message.PayloadEap
 
 	// AUTH, SAr2, TSi, Tsr, N(NAS_IP_ADDRESS), N(NAS_TCP_PORT)
 	var responseSecurityAssociation *ike_message.SecurityAssociation
@@ -201,7 +203,7 @@ func HandleIKEAUTH(
 			}
 		case ike_message.TypeEAP:
 			ikeLog.Info("Get EAP")
-			eapReq = ikePayload.(*ike_message.EAP)
+			eapReq = ikePayload.(*ike_message.PayloadEap)
 		}
 	}
 
@@ -240,12 +242,16 @@ func HandleIKEAUTH(
 		eapVendorTypeData = append(eapVendorTypeData, nasLength...)
 		eapVendorTypeData = append(eapVendorTypeData, registrationRequest...)
 
-		eap := ikePayload.BuildEAP(ike_message.EAPCodeResponse, eapIdentifier)
-		eap.EAPTypeData.BuildEAPExpanded(
-			ike_message.VendorID3GPP,
-			ike_message.VendorTypeEAP5G,
-			eapVendorTypeData,
-		)
+		eap := ikePayload.BuildEAP(eap_message.EapCodeResponse, eapIdentifier)
+		eap.EapTypeData = ike_message.BuildEapExpanded(
+			eap_message.VendorId3GPP,
+			eap_message.VendorTypeEAP5G,
+			eapVendorTypeData)
+		//eap.EAPTypeData.BuildEAPExpanded(
+		//	ike_message.VendorID3GPP,
+		//	ike_message.VendorTypeEAP5G,
+		//	eapVendorTypeData,
+		//)
 
 		ikeMessage := ike_message.NewMessage(
 			ikeSecurityAssociation.LocalSPI,
@@ -277,8 +283,8 @@ func HandleIKEAUTH(
 		ikeSecurityAssociation.State++
 
 	case EAP_RegistrationRequest:
-		var eapExpanded *ike_message.EAPExpanded
-		eapExpanded, ok = eapReq.EAPTypeData[0].(*ike_message.EAPExpanded)
+		var eapExpanded *eap_message.EapExpanded
+		eapExpanded, ok = eapReq.EapTypeData.(*eap_message.EapExpanded)
 		if !ok {
 			ikeLog.Error("The EAP data is not an EAP expended.")
 			return
@@ -336,10 +342,10 @@ func HandleIKEAUTH(
 		eapVendorTypeData = append(eapVendorTypeData, nasLength...)
 		eapVendorTypeData = append(eapVendorTypeData, pdu...)
 
-		eap := ikePayload.BuildEAP(ike_message.EAPCodeResponse, eapReq.Identifier)
-		eap.EAPTypeData.BuildEAPExpanded(
-			ike_message.VendorID3GPP,
-			ike_message.VendorTypeEAP5G,
+		eap := ikePayload.BuildEAP(eap_message.EapCodeRequest, eapReq.Identifier)
+		eap.EapTypeData = ike_message.BuildEapExpanded(
+			eap_message.VendorId3GPP,
+			eap_message.VendorTypeEAP5G,
 			eapVendorTypeData,
 		)
 
@@ -366,7 +372,7 @@ func HandleIKEAUTH(
 
 		ikeSecurityAssociation.State++
 	case EAP_Authentication:
-		_, ok = eapReq.EAPTypeData[0].(*ike_message.EAPExpanded)
+		_, ok = eapReq.EapTypeData.(*eap_message.EapExpanded)
 		if !ok {
 			ikeLog.Error("The EAP data is not an EAP expended.")
 			return
@@ -406,10 +412,10 @@ func HandleIKEAUTH(
 		eapVendorTypeData = append(eapVendorTypeData, nasLength...)
 		eapVendorTypeData = append(eapVendorTypeData, pdu...)
 
-		eap := ikePayload.BuildEAP(ike_message.EAPCodeResponse, eapReq.Identifier)
-		eap.EAPTypeData.BuildEAPExpanded(
-			ike_message.VendorID3GPP,
-			ike_message.VendorTypeEAP5G,
+		eap := ikePayload.BuildEAP(eap_message.EapCodeResponse, eapReq.Identifier)
+		eap.EapTypeData = ike_message.BuildEapExpanded(
+			eap_message.VendorId3GPP,
+			eap_message.VendorTypeEAP5G,
 			eapVendorTypeData,
 		)
 
@@ -436,7 +442,7 @@ func HandleIKEAUTH(
 
 		ikeSecurityAssociation.State++
 	case EAP_NASSecurityComplete:
-		if eapReq.Code != ike_message.EAPCodeSuccess {
+		if eapReq.Code != eap_message.EapCodeSuccess {
 			ikeLog.Error("Not Success")
 			return
 		}
