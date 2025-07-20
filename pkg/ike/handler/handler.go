@@ -342,7 +342,7 @@ func HandleIKEAUTH(
 		eapVendorTypeData = append(eapVendorTypeData, nasLength...)
 		eapVendorTypeData = append(eapVendorTypeData, pdu...)
 
-		eap := ikePayload.BuildEAP(eap_message.EapCodeRequest, eapReq.Identifier)
+		eap := ikePayload.BuildEAP(eap_message.EapCodeResponse, eapReq.Identifier)
 		eap.EapTypeData = ike_message.BuildEapExpanded(
 			eap_message.VendorId3GPP,
 			eap_message.VendorTypeEAP5G,
