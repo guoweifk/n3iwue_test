@@ -42,7 +42,7 @@ func InitN3UEContext() {
 	suci := buildSUCI(
 		n3ueContext.N3ueInfo.BuildPLMN(),
 		[]byte{0xf0, 0xff},
-		0x00,
+		0x01,
 		0x00,
 		n3ueContext.N3ueInfo.BuildMSIN(),
 	)
